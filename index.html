@@ -137,9 +137,12 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
             }
+
             50% {
                 opacity: 0.3;
             }
@@ -416,28 +419,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
         const VEHICLE_MASTER = [
-            { name: 'Maestro', number: 'MH01CK7164', owner: 'Pipip' },
-            { name: 'Activa 4G', number: 'MH01BL5623', owner: 'Pipip' },
-            { name: 'Maestro', number: 'MH01BP3867', owner: 'Pipip' },
-            { name: 'Activa - Jesus', number: 'MH04GV8245', owner: 'Pipip' },
-            { name: 'Activa', number: 'MH01BQ3956', owner: 'Pipip' },
-            { name: 'Activa', number: 'MH01BV4904', owner: 'Pipip' },
-            { name: 'Activa', number: 'MH01CM1112', owner: 'Pipip' },
-            { name: 'Activa 125', number: 'MH04HG4828', owner: 'Pipip' },
-            { name: 'Burgman', number: 'MH01DV8041', owner: 'Pipip' },
-            { name: 'Jupiter', number: 'MH04KM0531', owner: 'Sheru' },
-            { name: 'Activa 125', number: 'MH01CG7753', owner: 'Afnan' },
-            { name: 'FZ', number: 'MH01CK3198', owner: 'Rizwan Patanwala' },
-            { name: 'Avenger', number: 'MH01CK5469', owner: 'Shahid Shaikh' },
-            { name: 'Activa', number: 'MH01DY1885', owner: 'Rehan Turk' },
+            { name: 'Maestro', number: 'MH01CK7164', owner: null },
+            { name: 'Activa 125', number: 'MH01CG7753', owner: null },
+            { name: 'Activa 4G', number: 'MH01BL5623', owner: null },
+            { name: 'Maestro', number: 'MH01BP3867', owner: null },
+            { name: 'Activa', number: 'MH01DY1885', owner: null },
+            { name: 'Jupiter', number: 'MH04HG3587', owner: 'Partner owned' },
+            { name: 'Activa 5G', number: 'MH01DF1144', owner: 'Rizwan Patanwala' },
+            { name: 'Activa', number: 'MH01DM5144', owner: 'Saad' },
+            { name: 'Activa', number: 'MH04GV8245', owner: null },
             { name: 'Burgman', number: 'MH01EH9642', owner: 'Rafi' },
+            { name: 'Activa', number: 'MH01EQ1492', owner: 'Sheru' },
+            { name: 'Burgman', number: 'MH03DM5262', owner: 'Amaan Dayattar' },
+            { name: 'Activa', number: 'MH01BQ3956', owner: null },
             { name: 'Ntorq', number: 'MH03CZ4254', owner: 'Mohsin – Kurla' },
             { name: 'Unicorn', number: 'MH01CL7982', owner: 'Rehan Mansuri' },
             { name: 'Burgman', number: 'MH01ED5039', owner: 'Osama Ansari' },
-            { name: 'Activa', number: 'MH01DD7793', owner: 'Shumaila' },
+            { name: 'FZ', number: 'MH01CK3198', owner: 'Rizwan Patanwala' },
+            { name: 'Activa', number: 'MH01BV4904', owner: null },
+            { name: 'Activa 125', number: 'MH04HG4828', owner: null },
+            { name: 'Avenger', number: 'MH01CK5469', owner: 'Shahid Shaikh' }
         ];
 
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxM6rktLV3kj_UWpmdn9M5ZvLOdMqkXXgCYFnCK48wUuueiFV8iNv-ZVbFXivinp41E/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCBHjKGQ9iY8CXFatPl4-X86yiMdYp17B-JSxoiE1dqhFHqpu7pFq8oKLP1yFUwlbc/exec';
         const REFRESH_INTERVAL = 60000; // 60 seconds
 
         let refreshTimer;
@@ -479,17 +483,17 @@
 
         function formatTime(timeStr) {
             if (!timeStr || timeStr === '-') return '';
-            
+
             // If it's already in HH:MM format, return it
             if (/^\d{2}:\d{2}$/.test(timeStr)) {
                 return timeStr;
             }
-            
+
             // If it's in HH:MM:SS format, extract HH:MM
             if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) {
                 return timeStr.substring(0, 5);
             }
-            
+
             // Handle Excel serial time format (decimal between 0 and 1)
             const timeNum = parseFloat(timeStr);
             if (!isNaN(timeNum) && timeNum >= 0 && timeNum < 1) {
@@ -498,7 +502,7 @@
                 const minutes = totalMinutes % 60;
                 return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             }
-            
+
             // Handle ISO date strings - extract time only
             if (timeStr.includes('T')) {
                 try {
@@ -510,7 +514,7 @@
                     return '';
                 }
             }
-            
+
             return timeStr;
         }
 
@@ -572,11 +576,24 @@
             const available = scooties.filter(s => !s.isRented);
             const rented = scooties.filter(s => s.isRented);
 
+            const now = new Date();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const returningToday = rented.filter(s => {
                 const returnDate = new Date(s.returnDate);
                 returnDate.setHours(0, 0, 0, 0);
+
+                // Check if return date is today
+                if (returnDate.getTime() === today.getTime()) {
+                    // If there's a return time, check if it's in the future
+                    if (s.endTime && s.endTime !== '-') {
+                        const [hours, minutes] = s.endTime.split(':').map(Number);
+                        const returnDateTime = new Date(s.returnDate);
+                        returnDateTime.setHours(hours, minutes, 0, 0);
+                        return returnDateTime > now;
+                    }
+                    return true;
+                }
                 return returnDate.getTime() === today.getTime();
             });
 
@@ -612,8 +629,39 @@
                 `).join('')
                 : '<p style="color: #999; text-align: center; padding: 20px;">😊 No scooties rented currently</p>';
 
-            const sortedReturns = rented
-                .sort((a, b) => new Date(a.returnDate) - new Date(b.returnDate))
+            // Filter upcoming returns - only show returns that haven't passed yet
+            const upcomingReturns = rented.filter(s => {
+                const returnDate = new Date(s.returnDate);
+
+                // If there's a return time, create exact datetime
+                if (s.endTime && s.endTime !== '-') {
+                    const [hours, minutes] = s.endTime.split(':').map(Number);
+                    returnDate.setHours(hours, minutes, 0, 0);
+                    return returnDate > now;
+                }
+
+                // If no time specified, just check if date is today or future
+                returnDate.setHours(23, 59, 59, 999);
+                return returnDate >= now;
+            });
+
+            const sortedReturns = upcomingReturns
+                .sort((a, b) => {
+                    const dateA = new Date(a.returnDate);
+                    const dateB = new Date(b.returnDate);
+
+                    // Add time to date for accurate sorting
+                    if (a.endTime && a.endTime !== '-') {
+                        const [hours, minutes] = a.endTime.split(':').map(Number);
+                        dateA.setHours(hours, minutes, 0, 0);
+                    }
+                    if (b.endTime && b.endTime !== '-') {
+                        const [hours, minutes] = b.endTime.split(':').map(Number);
+                        dateB.setHours(hours, minutes, 0, 0);
+                    }
+
+                    return dateA - dateB;
+                })
                 .slice(0, 10);
 
             const returnsList = document.getElementById('returnsList');
@@ -629,7 +677,6 @@
                 `).join('')
                 : '<p style="color: #999; text-align: center; padding: 20px;">📭 No upcoming returns</p>';
 
-            const now = new Date();
             const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             document.getElementById('lastUpdated').textContent = `Last updated: ${timeStr}`;
 
@@ -650,7 +697,7 @@
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                complete: function(results) {
+                complete: function (results) {
                     try {
                         const scooties = getScootyStatus(results.data);
                         updateDashboard(scooties);
@@ -660,24 +707,21 @@
                             `<span style="color: #ef4444;">⚠️ Error processing CSV file</span>`;
                     }
                 },
-                error: function(error) {
+                error: function (error) {
                     console.error('Error parsing CSV:', error);
                     document.getElementById('lastUpdated').innerHTML =
                         `<span style="color: #ef4444;">⚠️ Error reading CSV file</span>`;
                 }
             });
         }
-
         async function fetchGoogleSheetData() {
             try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch data from Apps Script');
-                }
-                const jsonData = await response.json();
-                return jsonData;
+                const response = await fetch(APPS_SCRIPT_URL + '?cachebust=' + Date.now(), {
+                    redirect: 'follow'
+                });
+                if (!response.ok) throw new Error('Failed');
+                return await response.json();
             } catch (error) {
-                console.error('Error fetching data:', error);
                 throw error;
             }
         }
@@ -708,19 +752,19 @@
 
         function switchMode(mode) {
             currentMode = mode;
-            
+
             const autoBtn = document.getElementById('autoBtn');
             const manualBtn = document.getElementById('manualBtn');
             const csvSection = document.getElementById('csvUploadSection');
             const autoIndicator = document.getElementById('autoRefreshIndicator');
-            
+
             if (mode === 'auto') {
                 autoBtn.classList.add('active');
                 manualBtn.classList.remove('active');
                 csvSection.style.display = 'none';
                 autoIndicator.style.display = 'flex';
                 document.getElementById('lastUpdated').textContent = 'Starting auto-refresh mode...';
-                
+
                 stopAutoRefresh();
                 startAutoRefresh();
             } else {
@@ -730,7 +774,7 @@
                 autoIndicator.style.display = 'none';
                 document.getElementById('lastUpdated').textContent = 'Manual mode: Upload CSV to view data';
                 document.getElementById('fileName').textContent = 'No file selected';
-                
+
                 stopAutoRefresh();
             }
         }
